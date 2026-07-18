@@ -57,8 +57,14 @@ PASS=0; FAIL=0; WARN=0; INFO=0
 BODY="$(mktemp)"; JSONBODY="$(mktemp)"; trap 'rm -f "$BODY" "$JSONBODY"' EXIT
 
 hesc() { printf '%s' "$1" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g'; }
-# JSON string escaper: backslash, quote, tab, CR, then collapse newlines to \n.
-jesc() { printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' -e 's/\t/\\t/g' -e 's/\r/\\r/g' -e ':a;N;$!ba;s/\n/\\n/g'; }
+# JSON string escaper. First sed escapes backslash/quote/tab/CR on EVERY line;
+# second sed collapses embedded newlines to \n. (Doing the slurp first would
+# only escape line 1 — a subtle bug when details span multiple lines.)
+jesc() {
+  printf '%s' "$1" \
+    | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' -e 's/\t/\\t/g' -e 's/\r/\\r/g' \
+    | sed -e ':a;N;$!ba;s/\n/\\n/g'
+}
 cap()  { head -n 60; }   # cap detail blocks
 
 add() { # status  title  summary  details

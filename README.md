@@ -15,6 +15,22 @@ Full chain adds offline hash-crack → authenticated plugin upload → webshell.
 | `detect/hunt_logs.py`          | Offline log hunt: SQLi + webshell-access + timing |
 | `detect/scan_webshells.sh`     | Filesystem webshell scanner for a WP webroot |
 | `detect/webshells.yar`         | YARA rules for PHP webshells / backdoors |
+| `detect/wp_ioc_scan.sh`        | Full IOC sweep → HTML **and/or** JSON report (24 checks) |
+
+## Full IOC sweep (`wp_ioc_scan.sh`)
+Filesystem + core-integrity + config + database + access-log checks, each PASS/
+FAIL/WARN/INFO with drill-down specifics. Read-only; exits non-zero on any FAIL
+(usable in CI/cron).
+```
+# HTML report
+./wp_ioc_scan.sh --webroot /path/to/wp --access-log access.log --output report.html
+# JSON for a SIEM (no HTML)
+./wp_ioc_scan.sh --no-html --json report.json
+# both at once
+./wp_ioc_scan.sh --output report.html --json report.json
+```
+JSON shape: `{ meta{host,webroot,wp_version,access_log,generated},
+summary{pass,fail,warn,info,total}, findings[{status,title,summary,details}] }`.
 
 ## Webshell detect-and-respond (paired with the lab)
 Emulates real post-exploitation, then detects and cleans it. **Lab only.**
