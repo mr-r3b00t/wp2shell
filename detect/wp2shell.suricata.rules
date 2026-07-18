@@ -1,0 +1,35 @@
+# Suricata/Snort rules — WP batch/v1 route-confusion -> author__not_in SQLi
+# Body inspection requires request-body logging (Suricata: request-body-limit
+# large enough; app.layer http). Tune sid range to your ruleset.
+
+# 1) The batch endpoint being POSTed to at all (context / low-severity baseline).
+alert http any any -> $HOME_NET any (msg:"WP batch/v1 endpoint POST";
+    flow:established,to_server; http.method; content:"POST";
+    http.uri; content:"batch/v1"; nocase;
+    classtype:web-application-activity; sid:9200001; rev:1;)
+
+# 2) High-confidence exploit: batch POST body carrying the "///" desync primer
+#    AND the author_exclude smuggle parameter.
+alert http any any -> $HOME_NET any (msg:"WP batch/v1 route-confusion SQLi (desync primer + author_exclude)";
+    flow:established,to_server; http.method; content:"POST";
+    http.uri; content:"batch/v1"; nocase;
+    http.request_body; content:"///"; content:"author_exclude"; nocase; distance:0;
+    classtype:web-application-attack; priority:1; sid:9200002; rev:1;)
+
+# 3) SQL time/boolean payload markers inside the batch body.
+alert http any any -> $HOME_NET any (msg:"WP batch/v1 SQLi payload markers (SLEEP/-- - inside author_exclude)";
+    flow:established,to_server; http.method; content:"POST";
+    http.request_body; content:"author_exclude"; nocase;
+    pcre:"/author_exclude[^\"]*?(?:SLEEP\(|BENCHMARK\(|\)\s*(?:OR|AND)\b|--\s)/i";
+    classtype:web-application-attack; priority:1; sid:9200003; rev:1;)
+
+# 4) rest_route query-string variant (no pretty permalinks).
+alert http any any -> $HOME_NET any (msg:"WP batch/v1 via rest_route query-string";
+    flow:established,to_server; http.uri; content:"rest_route=/batch/v1"; nocase;
+    classtype:web-application-activity; sid:9200004; rev:1;)
+
+# 5) Post-exploitation: plugin upload right after batch activity (webshell drop).
+alert http any any -> $HOME_NET any (msg:"WP plugin upload (possible webshell drop)";
+    flow:established,to_server; http.method; content:"POST";
+    http.uri; content:"/wp-admin/update.php"; content:"action=upload-plugin"; nocase;
+    classtype:web-application-activity; sid:9200005; rev:1;)

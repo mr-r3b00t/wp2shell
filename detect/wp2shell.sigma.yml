@@ -1,0 +1,54 @@
+title: WordPress batch/v1 route-confusion SQL injection (wp2shell)
+id: 5f2a1c34-9b7e-4c1a-8e2d-wp2shell0001
+status: experimental
+description: >
+  Detects exploitation of the WordPress core batch/v1 REST route-confusion flaw
+  that smuggles an unvalidated author_exclude parameter into WP_Query
+  author__not_in, yielding unauthenticated blind SQL injection.
+  Affected: WP 6.9.0-6.9.4, 7.0.0-7.0.1. Patched: 6.9.5 / 7.0.2.
+references:
+  - https://github.com/Icex0/wp2shell-poc
+author: assurance
+date: 2026/07/18
+logsource:
+  category: webserver
+detection:
+  # URI reaches the batch endpoint (both permalink styles)
+  batch_uri:
+    cs-uri-stem|contains:
+      - '/wp-json/batch/v1'
+      - 'rest_route=/batch/v1'
+  # Requires a log source that captures request BODY or decoded query
+  # (WAF / mod_security audit log / reverse-proxy with body capture).
+  payload_markers:
+    request_body|contains|all:
+      - '///'
+      - 'author_exclude'
+  sqli_tokens:
+    request_body|contains:
+      - 'SLEEP('
+      - 'BENCHMARK('
+      - '-- -'
+      - ') OR '
+      - ') AND '
+  # rest_route variant carries the payload in the query string itself
+  qs_payload:
+    cs-uri-query|contains:
+      - 'author_exclude'
+    cs-uri-query|contains:
+      - 'SLEEP('
+      - '%29+OR+'
+      - '%29%20OR%20'
+      - '--+-'
+  condition: batch_uri and (payload_markers or sqli_tokens or qs_payload)
+falsepositives:
+  - Legitimate use of the WP batch API by trusted first-party clients
+    (Gutenberg saves multiple entities) — those never contain '///',
+    author_exclude, or SQL tokens.
+level: high
+fields:
+  - c-ip
+  - cs-username
+  - cs-uri-stem
+  - sc-status
+  - time-taken   # time-based blind shows as clustered ~N-second responses

