@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>wp2shell — Attack Flow vs Apache Access Log</title>
+<style>
+  html { -webkit-text-size-adjust:100%; }
+  :root {
+    --paper:#e9edf3; --surface:#f7f9fc; --surface-2:#eff3f8;
+    --ink:#16202e; --muted:#586777; --faint:#8595a6;
+    --line:#d2dae4; --line-strong:#b9c4d1;
+    --amber:#a65510; --amber-bg:#f6e6d3;
+    --crit:#b32f45; --crit-bg:#f6dde1;
+    --good:#1c7a51; --good-bg:#d7ebe0;
+    --spine:#c6a06a;
+    --mono: ui-monospace, "SF Mono", "Cascadia Code", "Consolas", "Liberation Mono", monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:#0b1017; --surface:#121b26; --surface-2:#0f1721;
+      --ink:#e6ecf3; --muted:#8d9daf; --faint:#61728a;
+      --line:#233243; --line-strong:#33465b;
+      --amber:#e0902f; --amber-bg:#2a1e10;
+      --crit:#f0687d; --crit-bg:#2c141a;
+      --good:#46b98a; --good-bg:#0f241c;
+      --spine:#b98a4e;
+    }
+  }
+  :root[data-theme="light"] {
+    --paper:#e9edf3; --surface:#f7f9fc; --surface-2:#eff3f8;
+    --ink:#16202e; --muted:#586777; --faint:#8595a6;
+    --line:#d2dae4; --line-strong:#b9c4d1;
+    --amber:#a65510; --amber-bg:#f6e6d3;
+    --crit:#b32f45; --crit-bg:#f6dde1;
+    --good:#1c7a51; --good-bg:#d7ebe0;
+    --spine:#c6a06a;
+  }
+  :root[data-theme="dark"] {
+    --paper:#0b1017; --surface:#121b26; --surface-2:#0f1721;
+    --ink:#e6ecf3; --muted:#8d9daf; --faint:#61728a;
+    --line:#233243; --line-strong:#33465b;
+    --amber:#e0902f; --amber-bg:#2a1e10;
+    --crit:#f0687d; --crit-bg:#2c141a;
+    --good:#46b98a; --good-bg:#0f241c;
+    --spine:#b98a4e;
+  }
+
+  * { box-sizing:border-box; }
+  body {
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:var(--sans); line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap { max-width:940px; margin:0 auto; padding:40px 22px 72px; }
+
+  /* ---- header ---- */
+  header { border-bottom:1px solid var(--line-strong); padding-bottom:22px; margin-bottom:30px; }
+  .kicker {
+    font-family:var(--mono); font-size:11.5px; letter-spacing:.18em; text-transform:uppercase;
+    color:var(--amber); margin:0 0 10px;
+  }
+  h1 {
+    font-size:clamp(26px,4.4vw,38px); line-height:1.08; margin:0 0 12px;
+    letter-spacing:-.02em; text-wrap:balance; font-weight:680;
+  }
+  .lede { font-size:16px; color:var(--muted); max-width:64ch; margin:0; }
+  .meta {
+    display:flex; flex-wrap:wrap; gap:8px 10px; margin-top:20px;
+    font-family:var(--mono); font-size:12px;
+  }
+  .meta span {
+    background:var(--surface); border:1px solid var(--line); border-radius:5px;
+    padding:4px 9px; color:var(--muted);
+  }
+  .meta span b { color:var(--ink); font-weight:600; }
+
+  /* ---- log anatomy decoder ---- */
+  .decoder {
+    background:var(--surface); border:1px solid var(--line); border-radius:9px;
+    padding:16px 18px; margin:0 0 34px;
+  }
+  .decoder h2 { font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin:0 0 12px; font-family:var(--mono); }
+  .decoder-line { font-family:var(--mono); font-size:12.5px; overflow-x:auto; padding-bottom:4px; white-space:nowrap; }
+  .decoder-line .f { padding:1px 2px; border-radius:3px; }
+  .fld-ip{color:var(--crit);} .fld-time{color:var(--amber);} .fld-req{color:var(--ink); font-weight:700;}
+  .fld-status{color:var(--good); font-weight:700;} .fld-size{color:#7c6cc4;} .fld-ua{color:var(--muted);}
+  .decoder-key { display:flex; flex-wrap:wrap; gap:6px 16px; margin-top:10px; font-family:var(--mono); font-size:11px; color:var(--muted); }
+  .decoder-key i { font-style:normal; }
+  .dk{display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:5px; vertical-align:middle;}
+
+  /* ---- phase band ---- */
+  .phase-band {
+    display:flex; align-items:baseline; gap:12px; margin:38px 0 4px;
+    padding:9px 14px; border-radius:7px; background:var(--surface-2); border:1px solid var(--line);
+  }
+  .phase-band .tag { font-family:var(--mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:#fff; background:var(--amber); padding:2px 8px; border-radius:4px; }
+  .phase-band.crackfree .tag { background:var(--crit); }
+  .phase-band h3 { margin:0; font-size:15px; font-weight:640; }
+  .phase-band .sub { font-size:13px; color:var(--muted); margin-left:auto; font-family:var(--mono); }
+
+  /* ---- flow spine ---- */
+  .flow { display:flex; flex-direction:column; gap:0; margin-top:6px; }
+  .stage { display:grid; grid-template-columns:34px 1fr; column-gap:16px; }
+  .rail { display:flex; flex-direction:column; align-items:center; }
+  .node {
+    width:30px; height:30px; border-radius:50%; flex:none;
+    display:grid; place-items:center; font-family:var(--mono); font-size:12px; font-weight:700;
+    background:var(--surface); color:var(--amber); border:2px solid var(--amber); margin-top:14px;
+  }
+  .stage.rce .node { color:var(--crit); border-color:var(--crit); }
+  .connector { width:2px; flex:1; background:linear-gradient(var(--spine),var(--spine)); opacity:.5; margin:4px 0 0; min-height:14px; }
+  .stage:last-child .connector { display:none; }
+
+  .card { padding:12px 0 22px; min-width:0; }
+  .stage-head { display:flex; align-items:baseline; flex-wrap:wrap; gap:8px 12px; margin-bottom:3px; }
+  .stage-title { font-size:16px; font-weight:640; letter-spacing:-.01em; }
+  .stage-time { font-family:var(--mono); font-size:12px; color:var(--faint); }
+  .intent { font-size:14px; color:var(--muted); margin:0 0 11px; max-width:70ch; }
+  .intent b { color:var(--ink); font-weight:600; }
+
+  /* ---- log line block ---- */
+  .log {
+    font-family:var(--mono); font-size:12.5px; line-height:1.7;
+    background:var(--surface); border:1px solid var(--line); border-left:3px solid var(--amber);
+    border-radius:6px; padding:9px 12px; overflow-x:auto; white-space:nowrap;
+  }
+  .stage.rce .log { border-left-color:var(--crit); }
+  .log .row { display:block; }
+  .log .st207,.log .st302 { color:var(--amber); font-weight:700; }
+  .log .st200 { color:var(--good); font-weight:700; }
+  .log .st404 { color:var(--faint); font-weight:700; }
+  .log .big { color:#8a78d6; font-weight:700; }
+  .log .hot { color:var(--crit); font-weight:700; }
+  .log .dim { color:var(--faint); }
+
+  /* ---- visible / hidden chips ---- */
+  .chips { display:flex; flex-direction:column; gap:7px; margin-top:11px; }
+  .chip { display:grid; grid-template-columns:74px 1fr; gap:10px; align-items:start; font-size:13px; }
+  .chip .lbl { font-family:var(--mono); font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; padding:2px 0; text-align:right; font-weight:700; padding-top:1px; }
+  .chip.vis .lbl { color:var(--good); }
+  .chip.hid .lbl { color:var(--crit); }
+  .chip .txt { color:var(--muted); }
+  .chip .txt code { font-family:var(--mono); font-size:12px; background:var(--surface-2); padding:1px 5px; border-radius:4px; color:var(--ink); }
+  .chip.hid .txt { border-left:2px dashed var(--line-strong); padding-left:10px; margin-left:-1px; }
+
+  /* ---- blind-spot callout ---- */
+  .callout {
+    margin-top:40px; background:var(--crit-bg); border:1px solid var(--crit);
+    border-radius:9px; padding:20px 22px;
+  }
+  .callout h2 { margin:0 0 10px; font-size:16px; color:var(--crit); letter-spacing:-.01em; }
+  .callout ul { margin:0; padding-left:18px; color:var(--ink); font-size:14px; }
+  .callout li { margin:7px 0; }
+  .callout code { font-family:var(--mono); font-size:12.5px; background:var(--surface); padding:1px 5px; border-radius:4px; }
+
+  .tells { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin-top:22px; }
+  .tell { background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:14px 15px; }
+  .tell .h { font-family:var(--mono); font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--amber); margin-bottom:7px; }
+  .tell p { margin:0; font-size:13px; color:var(--muted); }
+  .tell p b { color:var(--ink); font-weight:600; }
+
+  footer { margin-top:44px; padding-top:18px; border-top:1px solid var(--line); font-size:12px; color:var(--faint); font-family:var(--mono); }
+
+  @media (max-width:560px){
+    .stage { grid-template-columns:26px 1fr; column-gap:11px; }
+    .node{width:24px;height:24px;font-size:11px;}
+    .chip{grid-template-columns:1fr; gap:2px;}
+    .chip .lbl{text-align:left;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="kicker">DFIR · CVE-2026-63030 / 60137 · wp2shell</p>
+    <h1>Attacker request flow vs. the Apache access log</h1>
+    <p class="lede">Every stage of the full <code>dfir</code> run reconstructed from a single access log — mapping what the attacker actually did against what the combined-format log line records, and what it silently omits.</p>
+    <div class="meta">
+      <span>source <b>/var/log/apache2/access_file.log</b></span>
+      <span>host <b>localhost:8091</b> (WP 7.0.1)</span>
+      <span>attacker <b>172.20.0.1</b></span>
+      <span>window <b>06:41:24–06:41:31 UTC</b></span>
+      <span>UA <b>Chrome/126</b> (tool)</span>
+    </div>
+  </header>
+
+  <div class="decoder">
+    <h2>Anatomy of one combined-format line</h2>
+    <div class="decoder-line">
+      <span class="f fld-ip">172.20.0.1</span> <span class="dim">- -</span> <span class="f fld-time">[19/Jul/2026:06:41:24 +0000]</span> "<span class="f fld-req">POST /?rest_route=/batch/v1/ HTTP/1.1</span>" <span class="f fld-status">207</span> <span class="f fld-size">19522</span> <span class="dim">"-"</span> <span class="f fld-ua">"Mozilla/5.0 … Chrome/126.0.0.0"</span>
+    </div>
+    <div class="decoder-key">
+      <span><i class="dk" style="background:var(--crit)"></i>client IP</span>
+      <span><i class="dk" style="background:var(--amber)"></i>timestamp</span>
+      <span><i class="dk" style="background:var(--ink)"></i>request line — <b>method + URI only</b></span>
+      <span><i class="dk" style="background:var(--good)"></i>status</span>
+      <span><i class="dk" style="background:#7c6cc4"></i>bytes sent</span>
+      <span><i class="dk" style="background:var(--muted)"></i>referer · user-agent</span>
+    </div>
+  </div>
+
+  <!-- ============ SHARED FRONT ============ -->
+  <div class="phase-band">
+    <span class="tag">Stage 0–1</span>
+    <h3>Recon &amp; SQL-injection — shared by both chains</h3>
+    <span class="sub">the injection never appears in the log</span>
+  </div>
+
+  <div class="flow">
+    <div class="stage">
+      <div class="rail"><div class="node">0</div><div class="connector"></div></div>
+      <div class="card">
+        <div class="stage-head"><span class="stage-title">Version fingerprint</span><span class="stage-time">GET recon</span></div>
+        <p class="intent">Passive reads of generator strings to confirm the target is in the vulnerable range (6.9.x / 7.0.0–7.0.1).</p>
+        <div class="log"><span class="row"><span class="dim">…</span> "<b>GET /feed/ HTTP/1.1</b>" <span class="st200">200</span> · "<b>GET /readme.html</b>" <span class="st200">200</span> · "<b>GET /?rest_route=/</b>" <span class="st200">200</span></span></div>
+        <div class="chips">
+          <div class="chip vis"><span class="lbl">In log</span><span class="txt">Benign-looking GETs to <code>/feed/</code>, <code>/readme.html</code>, <code>/wp-json/</code> — indistinguishable from a crawler.</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="rail"><div class="node">1</div><div class="connector"></div></div>
+      <div class="card">
+        <div class="stage-head"><span class="stage-title">Batch route-confusion + blind SQLi confirm</span><span class="stage-time">06:37:20 → 06:38:56</span></div>
+        <p class="intent">Nested <code>batch/v1</code> requests desync the route handler and land <code>author__not_in</code> in <b>WP_Query</b>. A time-based <code>SLEEP()</code> differential confirms injection — visible only as evenly spaced requests.</p>
+        <div class="log">
+          <span class="row"><span class="dim">06:37:20</span> "POST <b>/?rest_route=/batch/v1/</b>" <span class="st207">207</span> 1542</span>
+          <span class="row"><span class="dim">06:37:44</span> "POST <b>/?rest_route=/batch/v1/</b>" <span class="st207">207</span> 1543 <span class="dim">← +24s</span></span>
+          <span class="row"><span class="dim">06:38:08</span> "POST <b>/?rest_route=/batch/v1/</b>" <span class="st207">207</span> 1543 <span class="dim">← +24s</span></span>
+          <span class="row"><span class="dim">06:38:32</span> "POST <b>/?rest_route=/batch/v1/</b>" <span class="st207">207</span> 1542 <span class="dim">← +24s</span></span>
+        </div>
+        <div class="chips">
+          <div class="chip vis"><span class="lbl">In log</span><span class="txt">Repeated <code>POST /?rest_route=/batch/v1/</code> → <code>207 Multi-Status</code>; small ~1.5 KB bodies; a regular <b>24-second cadence</b> = time-based blind extraction in progress.</span></div>
+          <div class="chip hid"><span class="lbl">Hidden</span><span class="txt">The payload — <code>author_exclude=0) AND IF(...,SLEEP(3),0)-- -</code>, the nested <code>"///"</code> primer, the SQL — all live in the POST <b>body</b>, which the access log never captures.</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ PHASE 1 ============ -->
+  <div class="phase-band">
+    <span class="tag">Phase 1</span>
+    <h3>Crack-based chain — dump the hash, log in, drop a shell</h3>
+    <span class="sub">plugin: asset-loader-crack</span>
+  </div>
+
+  <div class="flow">
+    <div class="stage">
+      <div class="rail"><div class="node">2</div><div class="connector"></div></div>
+      <div class="card">
+        <div class="stage-head"><span class="stage-title">Credential dump (in-band UNION)</span><span class="stage-time">06:41:24</span></div>
+        <p class="intent">A <code>UNION SELECT</code> forges a fake post row so <code>wp_users</code> (login + <code>$wp$2y$</code> bcrypt hash + email) reflects back in the response.</p>
+        <div class="log"><span class="row"><span class="dim">06:41:24</span> "POST <b>/?rest_route=/batch/v1/</b>" <span class="st207">207</span> <span class="big">19522</span></span></div>
+        <div class="chips">
+          <div class="chip vis"><span class="lbl">In log</span><span class="txt">Same batch URI/status as a probe — but the response <b>balloons to ~19 KB</b> (<span class="big" style="font-family:var(--mono)">19522</span> vs ~1.5 KB). The size anomaly <i>is</i> the exfil signal.</span></div>
+          <div class="chip hid"><span class="lbl">Hidden</span><span class="txt">The <code>UNION SELECT</code> and the dumped hash itself are in the request/response bodies — never logged.</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="rail"><div class="node">3</div><div class="connector"></div></div>
+      <div class="card">
+        <div class="stage-head"><span class="stage-title">Authenticate as admin</span><span class="stage-time">06:41:24</span></div>
+        <p class="intent">Fetch the login page (sets <code>wordpress_test_cookie</code>), then POST valid <b>admin</b> credentials — the <code>302</code> redirect to <code>/wp-admin/</code> means success.</p>
+        <div class="log">
+          <span class="row"><span class="dim">06:41:24</span> "GET <b>/wp-login.php</b>" <span class="st200">200</span> 5648</span>
+          <span class="row"><span class="dim">06:41:24</span> "POST <b>/wp-login.php</b>" <span class="st302">302</span> 1232 <span class="dim">← auth OK</span></span>
+        </div>
+        <div class="chips">
+          <div class="chip vis"><span class="lbl">In log</span><span class="txt">GET then POST <code>/wp-login.php</code> with a <code>302</code> — a successful login. One request, first try = automated, not a human.</span></div>
+          <div class="chip hid"><span class="lbl">Hidden</span><span class="txt">The username/password in the POST body; whether the creds were cracked or reused.</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="rail"><div class="node">4</div><div class="connector"></div></div>
+      <div class="card">
+        <div class="stage-head"><span class="stage-title">Deploy webshell plugin</span><span class="stage-time">06:41:25</span></div>
+        <p class="intent">Upload a ZIP plugin containing a token-gated PHP webshell via the admin plugin installer.</p>
+        <div class="log"><span class="row"><span class="dim">06:41:25</span> "POST <b>/wp-admin/update.php?action=upload-plugin</b>" <span class="st200">200</span> 82635</span></div>
+        <div class="chips">
+          <div class="chip vis"><span class="lbl">In log</span><span class="txt"><code>action=upload-plugin</code> — a high-fidelity IOC. An unattended admin uploading a plugin seconds after logging in is not normal operations.</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stage rce">
+      <div class="rail"><div class="node">5</div><div class="connector"></div></div>
+      <div class="card">
+        <div class="stage-head"><span class="stage-title">Webshell access → RCE</span><span class="stage-time">06:41:26</span></div>
+        <p class="intent">GET the freshly-created plugin path to verify, then run a command via <code>?cmd=</code>.</p>
+        <div class="log">
+          <span class="row"><span class="dim">06:41:26</span> "GET <b>/wp-content/plugins/asset-loader-crack/asset-loader-crack.php</b>?token=8f03…" <span class="st200">200</span> 208</span>
+          <span class="row"><span class="dim">06:41:26</span> "GET …asset-loader-crack.php?token=8f03…<span class="hot">&amp;cmd=whoami</span>" <span class="st200">200</span> 201</span>
+        </div>
+        <div class="chips">
+          <div class="chip vis"><span class="lbl">In log</span><span class="txt">GET to a <b>brand-new plugin path never requested before</b>, carrying a <code>token=</code> and <code>cmd=</code> query — the clearest RCE tell in the whole log, and here the payload <i>is</i> in the URI.</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ PHASE 2 ============ -->
+  <div class="phase-band crackfree">
+    <span class="tag">Phase 2</span>
+    <h3>Crack-free chain — forge an admin, no password needed</h3>
+    <span class="sub">plugin: asset-loader-nocrack</span>
+  </div>
+
+  <div class="flow">
+    <div class="stage">
+      <div class="rail"><div class="node">2</div><div class="connector"></div></div>
+      <div class="card">
+        <div class="stage-head"><span class="stage-title">Forge admin via oEmbed + changeset bridge</span><span class="stage-time">06:41:27 → 06:41:28</span></div>
+        <p class="intent">UNION-forges a fake <code>WP_Post</code>, primes the <code>oembed_cache</code>, and rides a <code>customize_changeset</code> to run <code>POST /wp/v2/users</code> as an existing admin — creating a <b>new administrator with no password crack</b>.</p>
+        <div class="log">
+          <span class="row"><span class="dim">06:41:27</span> "POST <b>/?rest_route=/batch/v1/</b>" <span class="st207">207</span> <span class="big">19710</span></span>
+          <span class="row"><span class="dim">06:41:28</span> "POST <b>/?rest_route=/batch/v1/</b>" <span class="st207">207</span> <span class="big">19691</span></span>
+        </div>
+        <div class="chips">
+          <div class="chip vis"><span class="lbl">In log</span><span class="txt">Only more large <code>batch/v1</code> 207s — <b>identical shape to Phase 1</b>. The access log cannot tell the crack-free path from the crack-based one here.</span></div>
+          <div class="chip hid"><span class="lbl">Hidden</span><span class="txt">The whole admin-creation — <code>POST /wp/v2/users</code>, the forged changeset, the borrowed admin ID — is tunnelled <b>inside the batch body</b>. No <code>/wp/v2/users</code> line ever appears in the access log.</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="rail"><div class="node">3</div><div class="connector"></div></div>
+      <div class="card">
+        <div class="stage-head"><span class="stage-title">Authenticate as the forged admin</span><span class="stage-time">06:41:29</span></div>
+        <p class="intent">Log in as the just-created <code>pentest_&lt;NNNN&gt;</code> administrator.</p>
+        <div class="log">
+          <span class="row"><span class="dim">06:41:29</span> "GET <b>/wp-login.php</b>" <span class="st200">200</span> 5648</span>
+          <span class="row"><span class="dim">06:41:29</span> "POST <b>/wp-login.php</b>" <span class="st302">302</span> 1253 <span class="dim">← auth OK</span></span>
+        </div>
+        <div class="chips">
+          <div class="chip vis"><span class="lbl">In log</span><span class="txt">A successful login — but for an account that was <b>never dumped and never existed before this session</b>. Correlated with user-audit data, "admin logs in that no one created" is the crack-free tell.</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="rail"><div class="node">4</div><div class="connector"></div></div>
+      <div class="card">
+        <div class="stage-head"><span class="stage-title">Deploy webshell plugin</span><span class="stage-time">06:41:30</span></div>
+        <p class="intent">Same installer path, second plugin.</p>
+        <div class="log"><span class="row"><span class="dim">06:41:30</span> "POST <b>/wp-admin/update.php?action=upload-plugin</b>" <span class="st200">200</span> 82662</span></div>
+        <div class="chips">
+          <div class="chip vis"><span class="lbl">In log</span><span class="txt">A <b>second</b> <code>upload-plugin</code> within seconds — same IOC, new artifact.</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stage rce">
+      <div class="rail"><div class="node">5</div><div class="connector"></div></div>
+      <div class="card">
+        <div class="stage-head"><span class="stage-title">Webshell access → RCE</span><span class="stage-time">06:41:31</span></div>
+        <p class="intent">Verify, then run <code>whoami</code>.</p>
+        <div class="log">
+          <span class="row"><span class="dim">06:41:31</span> "GET <b>/wp-content/plugins/asset-loader-nocrack/asset-loader-nocrack.php</b>?token=3d3c…" <span class="st200">200</span> 208</span>
+          <span class="row"><span class="dim">06:41:31</span> "GET …asset-loader-nocrack.php?token=3d3c…<span class="hot">&amp;cmd=whoami</span>" <span class="st200">200</span> 201</span>
+        </div>
+        <div class="chips">
+          <div class="chip vis"><span class="lbl">In log</span><span class="txt">A second new plugin path with <code>token=</code> + <code>cmd=</code>. Both shells return <code>www-data</code>.</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ BLIND SPOTS ============ -->
+  <div class="callout">
+    <h2>What the access log can &amp; can't see</h2>
+    <ul>
+      <li><b>No request bodies.</b> The combined format logs method + URI only. Every SQLi payload, the UNION dumps, and the entire crack-free <code>POST /wp/v2/users</code> admin creation are invisible — they ride inside <code>batch/v1</code> POST bodies.</li>
+      <li><b>Both chains look the same at the batch stage.</b> Crack-based vs crack-free is indistinguishable in the access log until the login/upload/exec tail — separate the two with the <b>DB query log</b> (<code>oembed_cache</code> / <code>customize_changeset</code> writes) and a <b>user-account audit</b>.</li>
+      <li><b>UA is not identity.</b> The tool ran as <code>Chrome/126</code>; the analyst's browser heartbeat (<code>admin-ajax.php</code>, <code>Chrome/150</code>) is interleaved in the same log. Don't pivot on user-agent.</li>
+    </ul>
+  </div>
+
+  <div class="tells">
+    <div class="tell"><div class="h">Tell · volume</div><p><b>batch/v1 POST flood</b> → 207s. A public site rarely sees a burst of <code>/batch/v1</code> at all.</p></div>
+    <div class="tell"><div class="h">Tell · size</div><p><b>~19 KB responses</b> to batch POSTs where probes are ~1.5 KB = in-band data exfiltration.</p></div>
+    <div class="tell"><div class="h">Tell · timing</div><p><b>Even N-second gaps</b> between identical requests = time-based blind extraction stepping through characters.</p></div>
+    <div class="tell"><div class="h">Tell · sequence</div><p><b>login → upload-plugin → new <code>/plugins/…php?cmd=</code></b> within seconds is the RCE fingerprint.</p></div>
+  </div>
+
+  <footer>
+    Reconstructed from /var/log/apache2/access_file.log · wp2shell lab · CVE-2026-63030 (batch route-confusion → RCE) + CVE-2026-60137 (author__not_in SQLi). Query strings truncated for display; timestamps and status/size fields verbatim.
+  </footer>
+</div>
+</body>
+</html>
